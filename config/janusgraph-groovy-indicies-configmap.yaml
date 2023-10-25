@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: indicies-groovy
+  namespace: janusgraph
+data:
+  indicies.groovy: |
+    graph = JanusGraphFactory.open('conf/kubernetes-conf.properties')
+    mgmt = graph.openManagement()
+    if(!mgmt.containsVertexLabel("exampleLabel")) mgmt.makeVertexLabel("exampleLabel").make()
+    if (! mgmt.containsPropertyKey("vertexType")) mgmt.makePropertyKey("vertexType").dataType(String.class).cardinality(org.janusgraph.core.Cardinality.SINGLE).make()
+    vertexType = mgmt.getPropertyKey("vertexType")
+    exampleLabel = mgmt.getVertexLabel("exampleLabel")
+    if(!mgmt.containsGraphIndex("byVertexTypeComposite")) mgmt.buildIndex('byVertexTypeComposite', Vertex.class).addKey(vertexType).buildCompositeIndex()
+    if(!mgmt.containsGraphIndex("byExampleLabelNameComposite")) mgmt.buildIndex('byExampleLabelNameComposite', Vertex.class).addKey(exampleLabel).buildCompositeIndex()
+    if (!mgmt.containsRelationIndex(mgmt.getEdgeLabel("belongsTo"), "belongsTo")) mgmt.buildEdgeIndex(mgmt.getEdgeLabel("belongsTo"), "belongsTo", Direction.BOTH, mgmt.getPropertyKey('aPropertyKey'))
+    mgmt.commit()
+    graph.tx().commit()

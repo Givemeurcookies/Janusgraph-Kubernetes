@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: janusgraph-service
+  namespace: janusgraph
+spec:
+  selector:
+    app: janusgraph
+  ports:
+    - protocol: TCP
+      port: 8182
+      targetPort: 8182
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: janusgraph-0-6-4
+  namespace: cryobase
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: janusgraph
+  template:
+    metadata:
+      labels:
+        app: janusgraph
+    spec:
+      # volumes:
+      # - name: indicies-groovy-volume
+      #   configMap:
+      #     name: indicies-groovy
+      # - name: janusgraph-config-volume
+      #   configMap:
+      #     name: janusgraph-kubernetes-config
+      
+      containers:
+      - name: janusgraph
+        image: janusgraph/janusgraph:0.6.4
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: 2
+            memory: 4Gi
+          limits:
+            cpu: 2
+            memory: 8Gi
+        # volumeMounts:
+        # - name: indicies-groovy-volume
+        #   mountPath: /docker-entrypoint-initdb.d/indicies.groovy
+        #   subPath: indicies.groovy
+        # - name: janusgraph-config-volume
+        #   mountPath: /opt/janusgraph/conf/kubernetes-conf.properties
+        #   subPath: kubernetes-conf.properties
+        env:
+        - name: JANUS_PROPS_TEMPLATE
+          value: cql-es
+        ### Storage database - ScyllaDB
+        - name: janusgraph.storage.cql.local-datacenter
+          value: "hel1"
+        - name: janusgraph.storage.hostname
+          value: scylla-janus-client.janusgraph.svc.cluster.local
+        - name: janusgraph.index.search.hostname
+          value: elastic-7-janus-es-http.janusgraph.svc.cluster.local
+        ### Index database - ElasticSearch
+        - name: janusgraph.index.search.elasticsearch.http.auth.type
+          value: "basic"
+        - name: janusgraph.index.search.elasticsearch.http.auth.basic.username
+          value: "elastic"
+        - name: janusgraph.index.search.elasticsearch.http.auth.basic.password
+          valueFrom:
+            secretKeyRef:
+              name: elastic-7-janus-es-elastic-user
+              key: elastic
+        - name: janusgraph.index.search.elasticsearch.ssl.enabled
+          value: "false"
+        ports:
+        - containerPort: 8182
+          name: janusgraph
