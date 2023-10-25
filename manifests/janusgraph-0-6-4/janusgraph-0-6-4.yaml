@@ -15,7 +15,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: janusgraph-0-6-4
-  namespace: cryobase
+  namespace: janusgraph
 spec:
   replicas: 1
   selector:
